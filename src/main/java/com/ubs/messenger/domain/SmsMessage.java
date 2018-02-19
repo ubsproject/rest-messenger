@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 
 @Builder
 @EqualsAndHashCode
-public class EmailMessage implements Message {
+public class SmsMessage implements Message {
 
-    private String emailAddress;
+    private String phoneNo;
 
     private LocalDateTime sentTime;
 
@@ -25,7 +25,7 @@ public class EmailMessage implements Message {
         return textContent;
     }
 
-    public String getEmailAddress(){
-        return emailAddress;
+    public String getPhoneNo(){
+        return phoneNo;
     }
 }

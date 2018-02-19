@@ -3,6 +3,7 @@ package com.ubs.messenger.service.impl;
 import com.ubs.messenger.api.InputMessage;
 import com.ubs.messenger.domain.EmailMessage;
 import com.ubs.messenger.domain.Message;
+import com.ubs.messenger.domain.SmsMessage;
 import com.ubs.messenger.service.MessageRouter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
@@ -19,6 +20,9 @@ public class MessageTypeRouter implements MessageRouter{
     @Autowired
     private EmailSenderService emailSenderService;
 
+    @Autowired
+    private SmsSenderService smsSenderService;
+
     @Override
     @CachePut(cacheNames = MESSAGE_CACHE_NAME)
     public Message route(InputMessage msg) {
@@ -27,8 +31,19 @@ public class MessageTypeRouter implements MessageRouter{
 
         switch (msg.getMessageType()){
             case EMAIL:
-                message = EmailMessage.builder().sentTime(LocalDateTime.now()).textContent(msg.getText()).build();
+                message = EmailMessage.builder()//
+                    .sentTime(LocalDateTime.now())//
+                    .emailAddress(msg.getRecipient())//
+                    .textContent(msg.getText())//
+                    .build();//
                 emailSenderService.send(message);
+                break;
+            case SMS:
+                message = SmsMessage.builder()//
+                    .sentTime(LocalDateTime.now())//
+                    .phoneNo(msg.getRecipient())//
+                    .textContent(msg.getText()).build();//
+                smsSenderService.send((SmsMessage) message);
                 break;
             default: throw new RuntimeException(String.format("Unsupported message type exception: %s", msg.getMessageType()));
         }
