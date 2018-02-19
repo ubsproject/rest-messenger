@@ -1,7 +1,8 @@
 package com.ubs.messenger.service;
 
 import com.ubs.messenger.api.InputMessage;
+import com.ubs.messenger.domain.Message;
 
 public interface MessageRouter {
-    void route(InputMessage msg);
+    Message route(InputMessage msg);
 }

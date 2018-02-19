@@ -20,13 +20,13 @@ import static org.mockito.Mockito.verify;
 @RunWith(MockitoJUnitRunner.class)
 public class EmailSenderServiceTest {
 
+    private Logger logger = (Logger) LoggerFactory.getLogger(EmailSenderService.class);
+
     @Mock
     private Appender appender;
 
     @InjectMocks
     private EmailSenderService emailSenderService;
-
-    private Logger logger = (Logger) LoggerFactory.getLogger(EmailSenderService.class);
 
     @Before
     public void setup() {

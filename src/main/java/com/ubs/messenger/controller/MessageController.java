@@ -1,7 +1,9 @@
 package com.ubs.messenger.controller;
 
 import com.ubs.messenger.api.InputMessage;
-import com.ubs.messenger.service.impl.MessageTypeRouter;
+import com.ubs.messenger.domain.Message;
+import com.ubs.messenger.service.CacheRepository;
+import com.ubs.messenger.service.MessageRouter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,23 +14,31 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.List;
 
 @RestController
 public class MessageController {
 
     @Autowired
-    private MessageTypeRouter messageRouter;
+    private MessageRouter messageRouter;
 
-    @RequestMapping(method = RequestMethod.POST, path = "/send")
-    ResponseEntity<?> send(@Valid @RequestBody InputMessage msg) {
-        messageRouter.route(msg);
+    @Autowired
+    private CacheRepository cacheRepository;
 
-        //FIXME - replace by proper message id
+    @RequestMapping(method = RequestMethod.POST, path = "/messages")
+    public ResponseEntity<Message> send(@Valid @RequestBody InputMessage msg) {
+        Message sentMessage = messageRouter.route(msg);
+
         URI location = ServletUriComponentsBuilder
-                .fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(1)
-                .toUri();
-        return ResponseEntity.created(location).build();
+            .fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(sentMessage.hashCode())
+            .toUri();
+        return ResponseEntity.created(location).body(sentMessage);
+    }
+
+    @RequestMapping("/messages")
+    public List messages(){
+        return cacheRepository.getAllEntries();
     }
 }
