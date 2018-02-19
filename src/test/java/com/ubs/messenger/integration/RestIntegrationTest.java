@@ -8,14 +8,18 @@ import io.restassured.http.ContentType;
 import io.restassured.http.Headers;
 import io.restassured.parsing.Parser;
 import org.apache.http.HttpStatus;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.List;
 
+import static com.ubs.messenger.service.CacheRepository.MESSAGE_CACHE_NAME;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
@@ -29,9 +33,18 @@ public class RestIntegrationTest {
     private static final String JSON_PARSE_ERROR = "JSON parse error";
     private static final String MESSAGE_TYPE_MMS_TEXT_TEST = "{ \"messageType\" : \"MMS\", \"text\": \"Test\"}";
     private static final InputMessage VALID_EMAIL_MSG = InputMessage.builder()//
-                                                            .messageType(MessageType.EMAIL)//
-                                                            .text("Simple message")//
-                                                            .build();//
+        .messageType(MessageType.EMAIL)//
+        .recipient("test@email.com")
+        .text("Simple message")//
+        .build();//
+    private static final InputMessage VALID_SMS_MSG = InputMessage.builder()//
+        .messageType(MessageType.SMS)//
+        .recipient("+48 1234 1234")
+        .text("Simple message")//
+        .build();//
+
+    @Autowired
+    CacheManager cacheManager;
 
     @Before
     public void setup(){
@@ -42,6 +55,18 @@ public class RestIntegrationTest {
     public void testSend_emailMessage_shouldReturnAccepted() {
         given()//
             .body(VALID_EMAIL_MSG)//
+            .contentType(ContentType.JSON)//
+        .when()//
+            .post(MESSAGES_PATH)//
+        .then()//
+            .statusCode(HttpStatus.SC_CREATED)//
+            .body("sentTime", notNullValue());//
+    }
+
+    @Test
+    public void testSend_smsMessage_shouldReturnAccepted() {
+        given()//
+            .body(VALID_SMS_MSG)//
             .contentType(ContentType.JSON)//
         .when()//
             .post(MESSAGES_PATH)//
@@ -79,6 +104,20 @@ public class RestIntegrationTest {
         .then()//
             .statusCode(HttpStatus.SC_BAD_REQUEST)
             .body(containsString("NotNull.inputMessage.messageType"));//
+    }
+
+    @Test
+    public void testSend_noReceipient_shouldReturnBadRequest() {
+        InputMessage msg = VALID_SMS_MSG.toBuilder().recipient(null).build();
+
+        given()//
+                .body(msg)//
+                .contentType(ContentType.JSON)//
+                .when()//
+                .post(MESSAGES_PATH)//
+                .then()//
+                .statusCode(HttpStatus.SC_BAD_REQUEST)
+                .body(containsString("NotNull.inputMessage.recipient"));//
     }
 
     @Test
@@ -133,26 +172,29 @@ public class RestIntegrationTest {
     @Test
     public void testMessages_twoInputMessages_returnsList() {
         //given
-        InputMessage msg1 = InputMessage.builder().messageType(MessageType.EMAIL).text("Simple message").build();
-        InputMessage msg2 = InputMessage.builder().messageType(MessageType.EMAIL).text("Simple message2").build();
+        InputMessage msg1 = InputMessage.builder().messageType(MessageType.EMAIL).text("Simple message").recipient("em").build();
+        InputMessage msg2 = InputMessage.builder().messageType(MessageType.SMS).text("Simple message2").recipient("123").build();
         given()//
                 .body(msg1)//
                 .contentType(ContentType.JSON)//
                 .when()//
-                .post(MESSAGES_PATH).then().body("sentTime", notNullValue())//
-                .extract().path("hashCode");//
+                .post(MESSAGES_PATH).then().body("sentTime", notNullValue());//
 
         given()//
                 .body(msg2)//
                 .contentType(ContentType.JSON)//
                 .when()//
-                .post(MESSAGES_PATH).then().body("sentTime", notNullValue())//
-                .extract().path("hashCode");//
+                .post(MESSAGES_PATH).then().body("sentTime", notNullValue());//
 
         //when
         List<?> messages = given().when().get(MESSAGES_PATH).getBody().as(List.class);
 
         //then
         assertEquals(2, messages.size());
+    }
+
+    @After
+    public void cleanup(){
+        cacheManager.getCache(MESSAGE_CACHE_NAME).clear();
     }
 }

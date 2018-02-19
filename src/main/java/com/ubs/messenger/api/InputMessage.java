@@ -21,4 +21,7 @@ public class InputMessage {
 
     @NotNull
     private MessageType messageType;
+
+    @NotNull
+    private String recipient;
 }
