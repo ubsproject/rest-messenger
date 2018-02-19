@@ -1,5 +1,6 @@
 package com.ubs.messenger.service.impl;
 
+import com.ubs.messenger.service.CacheRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -10,7 +11,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 
 @Component
-public class MapCacheRepository implements com.ubs.messenger.service.CacheRepository {
+public class MapCacheRepository implements CacheRepository {
 
     @Autowired
     private CacheManager cacheManager;
